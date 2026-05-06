@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  //url      = env("DATABASE_URL")
+}
+
+// 1. Definisi Role User
+enum Role {
+  admin
+  doctor
+  patient
+}
+
+// 2. Definisi Status Konsultasi
+enum ConsultationStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(patient) // Default sebagai Pasien
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  detections           Detection[]
+  patientConsultations Consultation[] @relation("PatientToConsultation")
+  doctorConsultations  Consultation[] @relation("DoctorToConsultation")
+  messages             ChatMessage[]
+}
+
+model Detection {
+  id          String   @id @default(uuid())
+  imageUrl    String   // URL gambar dari Cloudinary/S3/Local
+  complaint   String   @db.Text // Keluhan dari pasien
+  result      String   // Hasil AI (Melanoma/Benign)
+  confidence  Float    // Skor akurasi AI
+  createdAt   DateTime @default(now())
+
+  // Relasi ke User (Pasien)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  // Relasi 1-ke-1 ke Konsultasi (Satu deteksi bisa memicu satu sesi konsultasi)
+  consultation Consultation?
+}
+
+model Consultation {
+  id          String             @id @default(uuid())
+  status      ConsultationStatus @default(OPEN)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // Relasi ke Detection
+  detectionId String             @unique
+  detection   Detection          @relation(fields: [detectionId], references: [id])
+
+  // Relasi ke Pasien
+  patientId   String
+  patient     User               @relation("PatientToConsultation", fields: [patientId], references: [id])
+
+  // Relasi ke Dokter
+  doctorId    String
+  doctor      User               @relation("DoctorToConsultation", fields: [doctorId], references: [id])
+
+  // Relasi ke Pesan Chat
+  messages    ChatMessage[]
+}
+
+model ChatMessage {
+  id             String       @id @default(uuid())
+  message        String       @db.Text
+  timestamp      DateTime     @default(now())
+
+  // Relasi ke Sesi Konsultasi
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+
+  // Relasi ke Pengirim (Bisa Dokter atau Pasien)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+}

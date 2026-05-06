@@ -1,10 +1,10 @@
 {
   "name": "melanoma-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "dev": "nodemon server.js",
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,11 +19,24 @@
   "homepage": "https://github.com/irhamputra77/melanoma-api#readme",
   "description": "",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@prisma/config": "^7.7.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.7.0",
+    "tsx": "^4.21.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
