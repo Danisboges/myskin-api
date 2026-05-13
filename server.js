@@ -9,6 +9,10 @@ const userManagementRoutes = require("./src/routes/userManagement.route");
 const doctorRoutes = require('./src/routes/doctor.route');
 const adminRoutes = require('./src/routes/admin.route');
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+const patientRoutes = require('./src/routes/patient.route');
+>>>>>>> Stashed changes
 =======
 const patientRoutes = require('./src/routes/patient.route');
 >>>>>>> Stashed changes
@@ -51,6 +55,10 @@ app.use("/api/user", userManagementRoutes);
 app.use('/api/v1/doctor', doctorRoutes);
 app.use('/api/v1/admin', adminRoutes);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+app.use('/api/v1/patient', patientRoutes);
+>>>>>>> Stashed changes
 =======
 app.use('/api/v1/patient', patientRoutes);
 >>>>>>> Stashed changes

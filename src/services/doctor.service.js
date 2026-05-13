@@ -6,6 +6,7 @@ const prisma = require('../config/prisma');
  * Get doctor dashboard summary
  */
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const getDashboardSummary = async (doctorId) => {
   try {
     const caseReviews = await prisma.caseReview.findMany({
@@ -35,6 +36,8 @@ const getDashboardSummary = async (doctorId) => {
     
     const growthPercentage = lastMonthCases > 0 ? Math.round(((thisMonthCases - lastMonthCases) / lastMonthCases) * 100) : 0;
 =======
+=======
+>>>>>>> Stashed changes
 const getDashboardSummary = async (userId) => {
   try {
     // 1. Dapatkan doctor profile dari userId
@@ -106,6 +109,9 @@ const getDashboardSummary = async (userId) => {
     const growthPercentage = lastMonthCases > 0 
       ? Math.round(((thisMonthCases - lastMonthCases) / lastMonthCases) * 100) 
       : (thisMonthCases > 0 ? 100 : 0); // Jika bulan lalu 0 tapi bulan ini ada, anggap 100% growth
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     return {
@@ -120,6 +126,7 @@ const getDashboardSummary = async (userId) => {
   }
 };
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 /**
  * Get assigned cases for a doctor
@@ -129,6 +136,8 @@ const getAssignedCases = async (doctorId, filters = {}) => {
     const assignments = await prisma.caseAssignment.findMany({
       where: { doctorId },
 =======
+=======
+>>>>>>> Stashed changes
 /**
  * Get assigned cases for a doctor
  */
@@ -145,6 +154,9 @@ const getAssignedCases = async (userId, filters = {}) => {
 
     const assignments = await prisma.caseAssignment.findMany({
       where: { doctorId: doctorProfile.id },
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       include: {
         doctor: true
@@ -155,6 +167,7 @@ const getAssignedCases = async (userId, filters = {}) => {
 
     const cases = await prisma.caseReview.findMany({
       where: {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         id: { in: caseIds },
         reviewStatus: 'pending_review'
@@ -168,6 +181,8 @@ const getAssignedCases = async (userId, filters = {}) => {
         receivedAt: true,
         reviewStatus: true
 =======
+=======
+>>>>>>> Stashed changes
         caseId: { in: caseIds },
         reviewStatus: 'pending_review'
       },
@@ -183,6 +198,9 @@ const getAssignedCases = async (userId, filters = {}) => {
             }
           }
         }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       },
       orderBy: { receivedAt: 'desc' }
@@ -192,6 +210,7 @@ const getAssignedCases = async (userId, filters = {}) => {
     return cases.map(c => ({
       caseId: c.caseId,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       patientName: c.patientName,
       patientAge: c.patientAge,
       patientGender: c.patientGender,
@@ -199,6 +218,8 @@ const getAssignedCases = async (userId, filters = {}) => {
       status: c.reviewStatus,
       avatarUrl: `/uploads/patients/${c.patientName.toLowerCase().replace(/\s+/g, '-')}.png`
 =======
+=======
+>>>>>>> Stashed changes
       patientName: c.scan.patient.user.name,
       patientAge: c.scan.patient.user.birthDate 
         ? new Date().getFullYear() - new Date(c.scan.patient.user.birthDate).getFullYear()
@@ -208,6 +229,9 @@ const getAssignedCases = async (userId, filters = {}) => {
       status: c.reviewStatus,
       scanImageUrl: c.scan.imageUrl,
       avatarUrl: `/uploads/patients/${c.scan.patient.user.name.toLowerCase().replace(/\s+/g, '-')}.png`
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }));
   } catch (error) {
@@ -222,8 +246,11 @@ const getCaseDetail = async (caseId) => {
   try {
     const caseReview = await prisma.caseReview.findUnique({
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       where: { caseId }
 =======
+=======
+>>>>>>> Stashed changes
       where: { caseId },
       include: {
         scan: {
@@ -236,6 +263,9 @@ const getCaseDetail = async (caseId) => {
           }
         }
       }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     });
 
@@ -243,6 +273,7 @@ const getCaseDetail = async (caseId) => {
       throw new Error('Case not found');
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     // Parse alternative predictions
     let predictions = [];
@@ -260,16 +291,22 @@ const getCaseDetail = async (caseId) => {
       percentage: caseReview.aiConfidencePercentage
     });
 =======
+=======
+>>>>>>> Stashed changes
     // Get patient age from birthDate
     const patientBirthDate = caseReview.scan.patient.user.birthDate;
     const patientAge = patientBirthDate 
       ? new Date().getFullYear() - new Date(patientBirthDate).getFullYear()
       : null;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     return {
       caseId: caseReview.caseId,
       patient: {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         id: caseReview.patientId,
         name: caseReview.patientName,
@@ -288,6 +325,8 @@ const getCaseDetail = async (caseId) => {
       },
       patientNotes: caseReview.patientNotes,
 =======
+=======
+>>>>>>> Stashed changes
         id: caseReview.scan.patientId,
         name: caseReview.scan.patient.user.name,
         age: patientAge,
@@ -306,6 +345,9 @@ const getCaseDetail = async (caseId) => {
         details: caseReview.scan.aiDetails
       },
       patientNotes: caseReview.scan.notes || 'No notes provided',
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       physicianObservation: caseReview.physicianObservation,
       status: caseReview.reviewStatus,
@@ -446,6 +488,7 @@ const rejectCase = async (caseId, doctorId, reason, physicianObservation, finalD
  * Get case history with filters and pagination
  */
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const getCaseHistory = async (doctorId, filters = {}) => {
   try {
     const { search, diagnosis, status, startDate, endDate, page = 1, limit = 10 } = filters;
@@ -455,6 +498,8 @@ const getCaseHistory = async (doctorId, filters = {}) => {
         where: { userId: doctorId }
       }))?.id,
 =======
+=======
+>>>>>>> Stashed changes
 const getCaseHistory = async (userId, filters = {}) => {
   try {
     const { search, diagnosis, status, startDate, endDate, page = 1, limit = 10 } = filters;
@@ -470,6 +515,9 @@ const getCaseHistory = async (userId, filters = {}) => {
 
     const whereClause = {
       doctorId: doctorProfile.id,
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       reviewStatus: { not: 'pending_review' }
     };
@@ -495,7 +543,11 @@ const getCaseHistory = async (userId, filters = {}) => {
     if (search) {
       whereClause.OR = [
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         { patientName: { contains: search, mode: 'insensitive' } },
+=======
+        { scan: { patient: { user: { name: { contains: search, mode: 'insensitive' } } } } },
+>>>>>>> Stashed changes
 =======
         { scan: { patient: { user: { name: { contains: search, mode: 'insensitive' } } } } },
 >>>>>>> Stashed changes
@@ -508,6 +560,7 @@ const getCaseHistory = async (userId, filters = {}) => {
     const cases = await prisma.caseReview.findMany({
       where: whereClause,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       select: {
         caseId: true,
         reviewedAt: true,
@@ -517,6 +570,8 @@ const getCaseHistory = async (userId, filters = {}) => {
         finalDiagnosis: true,
         reviewStatus: true
 =======
+=======
+>>>>>>> Stashed changes
       include: {
         scan: {
           include: {
@@ -527,6 +582,9 @@ const getCaseHistory = async (userId, filters = {}) => {
             }
           }
         }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       },
       skip: (page - 1) * limit,
@@ -540,18 +598,24 @@ const getCaseHistory = async (userId, filters = {}) => {
         date: c.reviewedAt ? c.reviewedAt.toISOString().split('T')[0] : null,
         patient: {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           id: c.patientId,
           name: c.patientName
         },
         clinicalImageUrl: c.clinicalImageUrl,
         aiDiagnosis: c.finalDiagnosis,
 =======
+=======
+>>>>>>> Stashed changes
           id: c.scan.patientId,
           name: c.scan.patient.user.name
         },
         clinicalImageUrl: c.scan.imageUrl,
         aiPrediction: c.scan.aiPrediction,
         finalDiagnosis: c.finalDiagnosis,
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         verificationStatus: c.reviewStatus
       })),
@@ -573,6 +637,7 @@ const getPatientEvolution = async (patientId) => {
   try {
     const cases = await prisma.caseReview.findMany({
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       where: { patientId },
       select: {
         id: true,
@@ -583,6 +648,8 @@ const getPatientEvolution = async (patientId) => {
         createdAt: true,
         aiConfidencePercentage: true
 =======
+=======
+>>>>>>> Stashed changes
       where: { scan: { patientId } },
       include: {
         scan: {
@@ -594,6 +661,9 @@ const getPatientEvolution = async (patientId) => {
             }
           }
         }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       },
       orderBy: { createdAt: 'desc' }
@@ -603,6 +673,7 @@ const getPatientEvolution = async (patientId) => {
       throw new Error('Patient not found');
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     const firstCase = await prisma.caseReview.findFirst({
       where: { patientId },
@@ -619,32 +690,44 @@ const getPatientEvolution = async (patientId) => {
       }
     });
 =======
+=======
+>>>>>>> Stashed changes
     const firstCase = cases[cases.length - 1]; // Oldest case
     const patient = cases[0].scan.patient;
     const patientBirthDate = patient.user.birthDate;
     const patientAge = patientBirthDate 
       ? new Date().getFullYear() - new Date(patientBirthDate).getFullYear()
       : null;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     // Calculate growth percentage (simplified)
     let growthPercentage = 0;
     if (cases.length > 1) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       const firstConfidence = cases[cases.length - 1].aiConfidencePercentage;
       const lastConfidence = cases[0].aiConfidencePercentage;
       growthPercentage = Math.round(((lastConfidence - firstConfidence) / firstConfidence) * 100);
 =======
+=======
+>>>>>>> Stashed changes
       const firstConfidence = cases[cases.length - 1].scan.aiConfidence || 0;
       const lastConfidence = cases[0].scan.aiConfidence || 0;
       if (firstConfidence > 0) {
         growthPercentage = Math.round(((lastConfidence - firstConfidence) / firstConfidence) * 100);
       }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
 
     return {
       patient: {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
         id: patientInfo?.patientId,
         name: patientInfo?.patientName,
@@ -657,6 +740,8 @@ const getPatientEvolution = async (patientId) => {
         imageUrl: c.clinicalImageUrl,
         note: c.patientNotes || 'Patient scan',
 =======
+=======
+>>>>>>> Stashed changes
         id: patientId,
         name: patient.user.name,
         age: patientAge,
@@ -670,6 +755,9 @@ const getPatientEvolution = async (patientId) => {
         confidence: c.scan.aiConfidence,
         diagnosis: c.finalDiagnosis,
         note: c.scan.complaint || 'Patient scan',
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         growthPercentage: index === 0 ? growthPercentage : undefined
       }))
@@ -704,7 +792,11 @@ const getDoctorProfile = async (userId) => {
 
     return {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       doctorId: doctorProfile.doctorId,
+=======
+      doctorId: doctorProfile.id,
+>>>>>>> Stashed changes
 =======
       doctorId: doctorProfile.id,
 >>>>>>> Stashed changes
@@ -716,7 +808,12 @@ const getDoctorProfile = async (userId) => {
       birthDate: user.birthDate ? user.birthDate.toISOString().split('T')[0] : null,
       joinedAt: doctorProfile.joinedAt.toISOString().split('T')[0],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       profileImageUrl: doctorProfile.profileImageUrl,
+=======
+      profileImageUrl: user.avatarUrl || '',
+      specialization: doctorProfile.specialization || 'Dermatology',
+>>>>>>> Stashed changes
 =======
       profileImageUrl: user.avatarUrl || '',
       specialization: doctorProfile.specialization || 'Dermatology',
@@ -764,6 +861,7 @@ const updateDoctorProfile = async (userId, updates) => {
 const updateProfilePhoto = async (userId, photoPath) => {
   try {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     const doctorProfile = await prisma.doctorProfile.findUnique({
       where: { userId }
     });
@@ -777,6 +875,8 @@ const updateProfilePhoto = async (userId, photoPath) => {
       data: {
         profileImageUrl: photoPath
 =======
+=======
+>>>>>>> Stashed changes
     const user = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -789,6 +889,9 @@ const updateProfilePhoto = async (userId, photoPath) => {
       where: { id: userId },
       data: {
         avatarUrl: photoPath
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       }
     });

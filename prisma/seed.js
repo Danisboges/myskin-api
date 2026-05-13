@@ -18,6 +18,7 @@ async function main() {
   console.log('Memulai proses seeding...');
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   console.log('Sedang mengisi data...');
 
   // ==================== CREATE ADMIN USER ====================
@@ -285,6 +286,8 @@ async function main() {
 
   console.log('✅ Seeding selesai!');
 =======
+=======
+>>>>>>> Stashed changes
   const admin = await prisma.user.upsert({
     where: { email: 'admin@melanoma.com' },
     update: {},
@@ -298,6 +301,9 @@ async function main() {
   });
 
   console.log('Seeding selesai. User Admin dibuat:', admin.email);
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 
@@ -307,7 +313,11 @@ main()
   })
   .catch(async (e) => {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     console.error('❌ Error during seeding:', e);
+=======
+    console.error('Error saat seeding:', e);
+>>>>>>> Stashed changes
 =======
     console.error('Error saat seeding:', e);
 >>>>>>> Stashed changes

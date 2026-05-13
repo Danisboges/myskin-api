@@ -68,6 +68,7 @@ const getSystemLogs = async (req, res) => {
 };
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 const getReportStatistics = async (startDate, endDate) => {
   // Ubah string tanggal menjadi Date object
   const start = new Date(startDate);
@@ -127,6 +128,8 @@ const getReportStatistics = async (startDate, endDate) => {
     avgConfidence
   };
 =======
+=======
+>>>>>>> Stashed changes
 const getReportStatistics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -144,6 +147,9 @@ const getReportStatistics = async (req, res) => {
     console.error("Error getting report statistics:", err);
     res.status(500).json({ status: "error", message: err.message });
   }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 };
 

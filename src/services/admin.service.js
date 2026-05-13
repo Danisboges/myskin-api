@@ -23,7 +23,11 @@ const getDashboardSummary = async () => {
       activeSessionsData, 
       accuracyData,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       totalDetections
+=======
+      totalScans
+>>>>>>> Stashed changes
 =======
       totalScans
 >>>>>>> Stashed changes
@@ -40,6 +44,7 @@ const getDashboardSummary = async () => {
       }),
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       // 3. Rata-rata Akurasi Deteksi
       prisma.detection.aggregate({
         _avg: { confidence: true },
@@ -48,6 +53,8 @@ const getDashboardSummary = async () => {
       // 4. Hitung jumlah deteksi untuk estimasi storage lokal
       prisma.detection.count()
 =======
+=======
+>>>>>>> Stashed changes
       // 3. Rata-rata Akurasi Deteksi (dari Scan, bukan Detection)
       prisma.scan.aggregate({
         _avg: { aiConfidence: true },
@@ -55,6 +62,9 @@ const getDashboardSummary = async () => {
 
       // 4. Hitung jumlah scan untuk estimasi storage lokal
       prisma.scan.count()
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     ]);
 
@@ -72,7 +82,11 @@ const getDashboardSummary = async () => {
     
     // Estimasi Lokal (Dev Mode)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     const estimatedMB = totalDetections * 0.5; // Asumsi 1 gambar = 500KB
+=======
+    const estimatedMB = totalScans * 0.5; // Asumsi 1 gambar = 500KB
+>>>>>>> Stashed changes
 =======
     const estimatedMB = totalScans * 0.5; // Asumsi 1 gambar = 500KB
 >>>>>>> Stashed changes
@@ -90,8 +104,13 @@ const getDashboardSummary = async () => {
       activeSessions: activeSessionsData.length,
       storageUsage, // <--- Siap diganti data asli setelah deploy
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       averageDetectionAccuracy: accuracyData._avg.confidence 
         ? parseFloat((accuracyData._avg.confidence * 100).toFixed(1)) 
+=======
+      averageDetectionAccuracy: accuracyData._avg.aiConfidence 
+        ? parseFloat((accuracyData._avg.aiConfidence * 100).toFixed(1)) 
+>>>>>>> Stashed changes
 =======
       averageDetectionAccuracy: accuracyData._avg.aiConfidence 
         ? parseFloat((accuracyData._avg.aiConfidence * 100).toFixed(1)) 
@@ -314,8 +333,13 @@ const getReportStatistics = async (startDate, endDate) => {
     }),
     
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // B. Hitung Total Deteksi (Scans)
     prisma.detection.count({
+=======
+    // B. Hitung Total Deteksi (Scans) - Gunakan Scan bukan Detection
+    prisma.scan.count({
+>>>>>>> Stashed changes
 =======
     // B. Hitung Total Deteksi (Scans) - Gunakan Scan bukan Detection
     prisma.scan.count({
@@ -325,15 +349,21 @@ const getReportStatistics = async (startDate, endDate) => {
 
     // C. Hitung Kasus Risiko Tinggi (Sesuai komentar schema: result "Melanoma")
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     prisma.detection.count({
       where: { 
         // Ubah string ini jika AI kamu mengembalikan nilai yang berbeda (misal: "Malignant")
         result: { contains: 'Melanoma', mode: 'insensitive' }, 
 =======
+=======
+>>>>>>> Stashed changes
     // Gunakan Scan dengan aiPrediction bukan Detection dengan result
     prisma.scan.count({
       where: { 
         aiPrediction: { contains: 'Melanoma', mode: 'insensitive' }, 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         ...dateFilter 
       } 
@@ -341,14 +371,20 @@ const getReportStatistics = async (startDate, endDate) => {
 
     // D. Hitung Kasus Risiko Rendah (Sesuai komentar schema: result "Benign")
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     prisma.detection.count({
       where: { 
         result: { contains: 'Benign', mode: 'insensitive' }, 
 =======
+=======
+>>>>>>> Stashed changes
     // Gunakan Scan dengan aiPrediction bukan Detection dengan result
     prisma.scan.count({
       where: { 
         aiPrediction: { contains: 'Benign', mode: 'insensitive' }, 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         ...dateFilter 
       }
@@ -360,9 +396,15 @@ const getReportStatistics = async (startDate, endDate) => {
     }),
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // F. Hitung Rata-rata Confidence (Akurasi AI)
     prisma.detection.aggregate({
       _avg: { confidence: true },
+=======
+    // F. Hitung Rata-rata Confidence (Akurasi AI) - Gunakan aiConfidence bukan confidence
+    prisma.scan.aggregate({
+      _avg: { aiConfidence: true },
+>>>>>>> Stashed changes
 =======
     // F. Hitung Rata-rata Confidence (Akurasi AI) - Gunakan aiConfidence bukan confidence
     prisma.scan.aggregate({
@@ -379,7 +421,11 @@ const getReportStatistics = async (startDate, endDate) => {
     lowRiskCases,
     completedConsultations,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     avgConfidence: confidenceAgg._avg.confidence ? Math.round(confidenceAgg._avg.confidence) : 0
+=======
+    avgConfidence: confidenceAgg._avg.aiConfidence ? Math.round(confidenceAgg._avg.aiConfidence * 100) : 0
+>>>>>>> Stashed changes
 =======
     avgConfidence: confidenceAgg._avg.aiConfidence ? Math.round(confidenceAgg._avg.aiConfidence * 100) : 0
 >>>>>>> Stashed changes

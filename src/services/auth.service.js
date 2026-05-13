@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const registerUser = async (userData) => {
   const { name, email, password, phone, role, gender, birthDate } = userData;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const hashedPassword = await bcrypt.hash(password, 10);
 
   return await prisma.user.create({
@@ -12,6 +13,8 @@ const registerUser = async (userData) => {
     select: { id: true, name: true, email: true, role: true, phone: true, gender: true, birthDate: true, createdAt: true }
   });
 =======
+=======
+>>>>>>> Stashed changes
 
   // 1. Validasi input wajib
   if (!name || !email || !password || !gender) {
@@ -70,6 +73,9 @@ const registerUser = async (userData) => {
     console.error("DEBUG DB ERROR:", error);
     throw new Error(`Database menolak data: ${error.message}`);
   }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 };
 

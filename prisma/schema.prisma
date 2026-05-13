@@ -20,7 +20,10 @@ enum Gender {
 }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // 2. Definisi Status Konsultasi
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 enum ConsultationStatus {
@@ -29,7 +32,10 @@ enum ConsultationStatus {
 }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 // 3. Definisi Status Case Review Dokter
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 enum CaseReviewStatus {
@@ -38,6 +44,7 @@ enum CaseReviewStatus {
   rejected
   under_review
 }
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 
 // 4. Definisi Tipe Notifikasi
@@ -106,6 +113,8 @@ model User {
   avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -179,8 +188,11 @@ model User {
   doctorConsultations  Consultation[] @relation("DoctorToConsultation")
   messages             ChatMessage[]
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   doctorProfile        DoctorProfile?
   adminSettings        AdminSettings?
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
   adminNotifications   AdminNotification[]
@@ -326,6 +338,7 @@ model ChatMessage {
   sender         User         @relation(fields: [senderId], references: [id])
 }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 // ==================== DOCTOR DASHBOARD MODELS ====================
 
@@ -563,6 +576,8 @@ model SystemLog {
   @@index([severity, createdAt])
   @@index([category, createdAt])
 =======
+=======
+>>>>>>> Stashed changes
 // ==================== DOCTOR REVIEW & REPORTS ====================
 
 model CaseReview {
@@ -737,5 +752,8 @@ model CaseAssignment {
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   @@unique([doctorId, caseId])
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
