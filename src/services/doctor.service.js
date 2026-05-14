@@ -5,34 +5,77 @@ const prisma = require('../config/prisma');
 /**
  * Get doctor dashboard summary
  */
-const getDashboardSummary = async (doctorId) => {
+const getDashboardSummary = async (userId) => {
   try {
-    const caseReviews = await prisma.caseReview.findMany({
+    // 1. Dapatkan doctor profile dari userId
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!doctorProfile) {
+      throw new Error('Doctor profile not found');
+    }
+
+    const doctorId = doctorProfile.id;
+
+    // 2. Hitung totalRequests dari tabel CaseAssignment
+    const totalRequests = await prisma.caseAssignment.count({
       where: { doctorId }
     });
 
-    const totalRequests = caseReviews.length;
+    // 3. Ambil data CaseReview untuk menghitung status dan akurasi AI
+    const caseReviews = await prisma.caseReview.findMany({
+      where: { doctorId },
+      include: {
+        scan: {
+          select: { aiConfidence: true }
+        }
+      }
+    });
+
+    // 4. Hitung pending dan completed dari CaseReview
     const pendingReview = caseReviews.filter(c => c.reviewStatus === 'pending_review').length;
+    // Status selain 'pending_review' (seperti 'approved', 'rejected') dianggap selesai
     const completedScans = caseReviews.filter(c => c.reviewStatus !== 'pending_review').length;
+
+    console.log("DEBUG getDashboardSummary - caseReviews:", caseReviews);
+    console.log("DEBUG getDashboardSummary - pendingReview:", pendingReview);
+    console.log("DEBUG getDashboardSummary - completedScans:", completedScans);
+
+    // 5. Hitung rata-rata akurasi AI
+    // Menggunakan opsional chaining (?.) untuk menghindari error jika scan tidak ada
+    const totalConfidence = caseReviews.reduce((sum, c) => sum + (c.scan?.aiConfidence || 0), 0);
+    const accuracy = caseReviews.length > 0 ? Math.round((totalConfidence / caseReviews.length) * 100) : 0;
     
-    // Calculate average accuracy from AI predictions
-    const totalConfidence = caseReviews.reduce((sum, c) => sum + (c.aiConfidencePercentage || 0), 0);
-    const accuracy = caseReviews.length > 0 ? Math.round(totalConfidence / caseReviews.length) : 0;
-    
-    // Calculate growth percentage (simplified: last month vs this month)
+    // 6. Hitung growth percentage berdasarkan CaseAssignment (Permintaan baru masuk)
     const thisMonth = new Date();
     thisMonth.setDate(1);
+    thisMonth.setHours(0, 0, 0, 0); // Set ke awal hari di tanggal 1 bulan ini
     
     const lastMonth = new Date(thisMonth);
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    lastMonth.setMonth(lastMonth.getMonth() - 1); // Set ke tanggal 1 bulan lalu
     
-    const thisMonthCases = caseReviews.filter(c => new Date(c.createdAt) >= thisMonth).length;
-    const lastMonthCases = caseReviews.filter(c => {
-      const d = new Date(c.createdAt);
-      return d >= lastMonth && d < thisMonth;
-    }).length;
+    // Optimasi Query: Menghitung langsung dari database, bukan di memori JS
+    const thisMonthCases = await prisma.caseAssignment.count({
+      where: {
+        doctorId,
+        createdAt: { gte: thisMonth }
+      }
+    });
     
-    const growthPercentage = lastMonthCases > 0 ? Math.round(((thisMonthCases - lastMonthCases) / lastMonthCases) * 100) : 0;
+    const lastMonthCases = await prisma.caseAssignment.count({
+      where: {
+        doctorId,
+        createdAt: {
+          gte: lastMonth,
+          lt: thisMonth
+        }
+      }
+    });
+    
+    const growthPercentage = lastMonthCases > 0 
+      ? Math.round(((thisMonthCases - lastMonthCases) / lastMonthCases) * 100) 
+      : (thisMonthCases > 0 ? 100 : 0); // Jika bulan lalu 0 tapi bulan ini ada, anggap 100% growth
 
     return {
       totalRequests,
@@ -45,14 +88,22 @@ const getDashboardSummary = async (doctorId) => {
     throw new Error(`Failed to get dashboard summary: ${error.message}`);
   }
 };
-
 /**
  * Get assigned cases for a doctor
  */
-const getAssignedCases = async (doctorId, filters = {}) => {
+const getAssignedCases = async (userId, filters = {}) => {
   try {
+    // Get doctor profile from userId
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!doctorProfile) {
+      throw new Error('Doctor profile not found');
+    }
+
     const assignments = await prisma.caseAssignment.findMany({
-      where: { doctorId },
+      where: { doctorId: doctorProfile.id },
       include: {
         doctor: true
       }
@@ -62,17 +113,21 @@ const getAssignedCases = async (doctorId, filters = {}) => {
 
     const cases = await prisma.caseReview.findMany({
       where: {
-        id: { in: caseIds },
+        caseId: { in: caseIds },
         reviewStatus: 'pending_review'
       },
-      select: {
-        id: true,
-        caseId: true,
-        patientName: true,
-        patientAge: true,
-        patientGender: true,
-        receivedAt: true,
-        reviewStatus: true
+      include: {
+        scan: {
+          include: {
+            patient: {
+              include: {
+                user: {
+                  select: { name: true, gender: true, birthDate: true }
+                }
+              }
+            }
+          }
+        }
       },
       orderBy: { receivedAt: 'desc' }
     });
@@ -80,12 +135,15 @@ const getAssignedCases = async (doctorId, filters = {}) => {
     // Map to expected format
     return cases.map(c => ({
       caseId: c.caseId,
-      patientName: c.patientName,
-      patientAge: c.patientAge,
-      patientGender: c.patientGender,
+      patientName: c.scan.patient.user.name,
+      patientAge: c.scan.patient.user.birthDate 
+        ? new Date().getFullYear() - new Date(c.scan.patient.user.birthDate).getFullYear()
+        : null,
+      patientGender: c.scan.patient.user.gender,
       receivedAt: c.receivedAt.toISOString(),
       status: c.reviewStatus,
-      avatarUrl: `/uploads/patients/${c.patientName.toLowerCase().replace(/\s+/g, '-')}.png`
+      scanImageUrl: c.scan.imageUrl,
+      avatarUrl: `/uploads/patients/${c.scan.patient.user.name.toLowerCase().replace(/\s+/g, '-')}.png`
     }));
   } catch (error) {
     throw new Error(`Failed to get assigned cases: ${error.message}`);
@@ -98,48 +156,51 @@ const getAssignedCases = async (doctorId, filters = {}) => {
 const getCaseDetail = async (caseId) => {
   try {
     const caseReview = await prisma.caseReview.findUnique({
-      where: { caseId }
+      where: { caseId },
+      include: {
+        scan: {
+          include: {
+            patient: {
+              include: {
+                user: { select: { name: true, gender: true, birthDate: true } }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!caseReview) {
       throw new Error('Case not found');
     }
 
-    // Parse alternative predictions
-    let predictions = [];
-    if (caseReview.alternativePredictions) {
-      try {
-        predictions = JSON.parse(caseReview.alternativePredictions);
-      } catch (e) {
-        predictions = [];
-      }
-    }
-
-    // Add main prediction
-    predictions.unshift({
-      label: caseReview.aiPredictionLabel,
-      percentage: caseReview.aiConfidencePercentage
-    });
+    // Get patient age from birthDate
+    const patientBirthDate = caseReview.scan.patient.user.birthDate;
+    const patientAge = patientBirthDate 
+      ? new Date().getFullYear() - new Date(patientBirthDate).getFullYear()
+      : null;
 
     return {
       caseId: caseReview.caseId,
       patient: {
-        id: caseReview.patientId,
-        name: caseReview.patientName,
-        age: caseReview.patientAge,
-        gender: caseReview.patientGender
+        id: caseReview.scan.patientId,
+        name: caseReview.scan.patient.user.name,
+        age: patientAge,
+        gender: caseReview.scan.patient.user.gender
       },
       clinicalImage: {
-        imageUrl: caseReview.clinicalImageUrl,
-        zoom: caseReview.zoom,
-        light: caseReview.light,
-        bodySite: caseReview.bodySite
+        imageUrl: caseReview.scan.imageUrl,
+        zoom: caseReview.zoom || '4.0x',
+        light: caseReview.light || 'Polarized',
+        bodySite: caseReview.scan.bodySite || 'unspecified',
+        complaint: caseReview.scan.complaint
       },
       aiPrediction: {
-        confidence: caseReview.aiConfidence,
-        predictions: predictions
+        confidence: caseReview.scan.aiConfidence || 0,
+        prediction: caseReview.scan.aiPrediction,
+        details: caseReview.scan.aiDetails
       },
-      patientNotes: caseReview.patientNotes,
+      patientNotes: caseReview.scan.notes || 'No notes provided',
       physicianObservation: caseReview.physicianObservation,
       status: caseReview.reviewStatus,
       receivedAt: caseReview.receivedAt.toISOString()
@@ -275,41 +336,118 @@ const rejectCase = async (caseId, doctorId, reason, physicianObservation, finalD
 
 // ==================== CASE HISTORY SERVICES ====================
 
+const createHttpError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
+const parsePositiveInteger = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const parseOptionalDate = (value, fieldName) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw createHttpError(`${fieldName} must be a valid date`, 400);
+  }
+
+  return date;
+};
+
+const normalizeReviewStatus = (status) => {
+  if (!status) {
+    return undefined;
+  }
+
+  const statusAliases = {
+    verified: 'approved',
+    completed: 'approved'
+  };
+  const normalized = statusAliases[status] || status;
+  const validStatuses = ['pending_review', 'approved', 'rejected', 'under_review'];
+
+  if (!validStatuses.includes(normalized)) {
+    throw createHttpError(
+      `status must be one of: ${validStatuses.join(', ')}`,
+      400
+    );
+  }
+
+  return normalized;
+};
+
 /**
  * Get case history with filters and pagination
  */
-const getCaseHistory = async (doctorId, filters = {}) => {
+const getCaseHistory = async (userId, filters = {}) => {
   try {
     const { search, diagnosis, status, startDate, endDate, page = 1, limit = 10 } = filters;
+    const pageNumber = parsePositiveInteger(page, 1);
+    const limitNumber = Math.min(parsePositiveInteger(limit, 10), 100);
+    const skip = (pageNumber - 1) * limitNumber;
+    const reviewStatus = normalizeReviewStatus(status);
+    const parsedStartDate = parseOptionalDate(startDate, 'startDate');
+    const parsedEndDate = parseOptionalDate(endDate, 'endDate');
+
+    if (parsedStartDate && parsedEndDate && parsedStartDate > parsedEndDate) {
+      throw createHttpError('endDate must be after startDate', 400);
+    }
+
+    // Get doctor profile from userId
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!doctorProfile) {
+      throw createHttpError('Doctor profile not found', 404);
+    }
 
     const whereClause = {
-      doctorId: (await prisma.doctorProfile.findUnique({
-        where: { userId: doctorId }
-      }))?.id,
+      doctorId: doctorProfile.id,
       reviewStatus: { not: 'pending_review' }
     };
 
-    if (status) {
-      whereClause.reviewStatus = status;
+    if (reviewStatus) {
+      whereClause.reviewStatus = reviewStatus;
     }
 
     if (diagnosis) {
       whereClause.finalDiagnosis = { contains: diagnosis, mode: 'insensitive' };
     }
 
-    if (startDate || endDate) {
+    if (parsedStartDate || parsedEndDate) {
       whereClause.reviewedAt = {};
-      if (startDate) {
-        whereClause.reviewedAt.gte = new Date(startDate);
+      if (parsedStartDate) {
+        whereClause.reviewedAt.gte = parsedStartDate;
       }
-      if (endDate) {
-        whereClause.reviewedAt.lte = new Date(endDate);
+      if (parsedEndDate) {
+        whereClause.reviewedAt.lte = parsedEndDate;
       }
     }
 
     if (search) {
       whereClause.OR = [
-        { patientName: { contains: search, mode: 'insensitive' } },
+        {
+          scan: {
+            is: {
+              patient: {
+                is: {
+                  user: {
+                    is: {
+                      name: { contains: search, mode: 'insensitive' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         { caseId: { contains: search, mode: 'insensitive' } }
       ];
     }
@@ -318,17 +456,19 @@ const getCaseHistory = async (doctorId, filters = {}) => {
 
     const cases = await prisma.caseReview.findMany({
       where: whereClause,
-      select: {
-        caseId: true,
-        reviewedAt: true,
-        patientId: true,
-        patientName: true,
-        clinicalImageUrl: true,
-        finalDiagnosis: true,
-        reviewStatus: true
+      include: {
+        scan: {
+          include: {
+            patient: {
+              include: {
+                user: { select: { name: true } }
+              }
+            }
+          }
+        }
       },
-      skip: (page - 1) * limit,
-      take: parseInt(limit),
+      skip,
+      take: limitNumber,
       orderBy: { reviewedAt: 'desc' }
     });
 
@@ -337,21 +477,33 @@ const getCaseHistory = async (doctorId, filters = {}) => {
         caseId: c.caseId,
         date: c.reviewedAt ? c.reviewedAt.toISOString().split('T')[0] : null,
         patient: {
-          id: c.patientId,
-          name: c.patientName
+          id: c.scan?.patientId || null,
+          name: c.scan?.patient?.user?.name || null
         },
-        clinicalImageUrl: c.clinicalImageUrl,
-        aiDiagnosis: c.finalDiagnosis,
+        clinicalImageUrl: c.scan?.imageUrl || null,
+        aiPrediction: c.scan?.aiPrediction || null,
+        finalDiagnosis: c.finalDiagnosis,
         verificationStatus: c.reviewStatus
       })),
       meta: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNumber,
+        limit: limitNumber,
         total
       }
     };
   } catch (error) {
-    throw new Error(`Failed to get case history: ${error.message}`);
+    if (error.status) {
+      throw error;
+    }
+
+    console.error('[doctor.service.getCaseHistory] Prisma/query failure', {
+      userId,
+      filters,
+      message: error.message,
+      stack: error.stack
+    });
+
+    throw createHttpError(`Failed to get case history: ${error.message}`, 500);
   }
 };
 
@@ -361,15 +513,17 @@ const getCaseHistory = async (doctorId, filters = {}) => {
 const getPatientEvolution = async (patientId) => {
   try {
     const cases = await prisma.caseReview.findMany({
-      where: { patientId },
-      select: {
-        id: true,
-        caseId: true,
-        clinicalImageUrl: true,
-        patientNotes: true,
-        physicalObservation: true,
-        createdAt: true,
-        aiConfidencePercentage: true
+      where: { scan: { patientId } },
+      include: {
+        scan: {
+          include: {
+            patient: {
+              include: {
+                user: { select: { name: true, gender: true, birthDate: true } }
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -378,41 +532,38 @@ const getPatientEvolution = async (patientId) => {
       throw new Error('Patient not found');
     }
 
-    const firstCase = await prisma.caseReview.findFirst({
-      where: { patientId },
-      orderBy: { createdAt: 'asc' }
-    });
-
-    const patientInfo = await prisma.caseReview.findFirst({
-      where: { patientId },
-      select: {
-        patientId: true,
-        patientName: true,
-        patientAge: true,
-        patientGender: true
-      }
-    });
+    const firstCase = cases[cases.length - 1]; // Oldest case
+    const patient = cases[0].scan.patient;
+    const patientBirthDate = patient.user.birthDate;
+    const patientAge = patientBirthDate 
+      ? new Date().getFullYear() - new Date(patientBirthDate).getFullYear()
+      : null;
 
     // Calculate growth percentage (simplified)
     let growthPercentage = 0;
     if (cases.length > 1) {
-      const firstConfidence = cases[cases.length - 1].aiConfidencePercentage;
-      const lastConfidence = cases[0].aiConfidencePercentage;
-      growthPercentage = Math.round(((lastConfidence - firstConfidence) / firstConfidence) * 100);
+      const firstConfidence = cases[cases.length - 1].scan.aiConfidence || 0;
+      const lastConfidence = cases[0].scan.aiConfidence || 0;
+      if (firstConfidence > 0) {
+        growthPercentage = Math.round(((lastConfidence - firstConfidence) / firstConfidence) * 100);
+      }
     }
 
     return {
       patient: {
-        id: patientInfo?.patientId,
-        name: patientInfo?.patientName,
-        age: patientInfo?.patientAge,
-        gender: patientInfo?.patientGender
+        id: patientId,
+        name: patient.user.name,
+        age: patientAge,
+        gender: patient.user.gender
       },
       evolution: cases.map((c, index) => ({
-        scanId: `SCAN-${String(cases.length - index).padStart(3, '0')}`,
+        caseId: c.caseId,
         date: c.createdAt.toISOString().split('T')[0],
-        imageUrl: c.clinicalImageUrl,
-        note: c.patientNotes || 'Patient scan',
+        imageUrl: c.scan.imageUrl,
+        prediction: c.scan.aiPrediction,
+        confidence: c.scan.aiConfidence,
+        diagnosis: c.finalDiagnosis,
+        note: c.scan.complaint || 'Patient scan',
         growthPercentage: index === 0 ? growthPercentage : undefined
       }))
     };
@@ -445,7 +596,7 @@ const getDoctorProfile = async (userId) => {
     }
 
     return {
-      doctorId: doctorProfile.doctorId,
+      doctorId: doctorProfile.id,
       fullName: user.name,
       email: user.email,
       gender: user.gender,
@@ -453,7 +604,8 @@ const getDoctorProfile = async (userId) => {
       phoneNumber: user.phone,
       birthDate: user.birthDate ? user.birthDate.toISOString().split('T')[0] : null,
       joinedAt: doctorProfile.joinedAt.toISOString().split('T')[0],
-      profileImageUrl: doctorProfile.profileImageUrl,
+      profileImageUrl: user.avatarUrl || '',
+      specialization: doctorProfile.specialization || 'Dermatology',
       practitionerStatus: {
         status: doctorProfile.verificationStatus,
         label: doctorProfile.verificationStatus === 'verified' ? 'Verified Doctor' : 'Pending Verification',
@@ -496,18 +648,18 @@ const updateDoctorProfile = async (userId, updates) => {
  */
 const updateProfilePhoto = async (userId, photoPath) => {
   try {
-    const doctorProfile = await prisma.doctorProfile.findUnique({
-      where: { userId }
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
     });
 
-    if (!doctorProfile) {
-      throw new Error('Doctor profile not found');
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    await prisma.doctorProfile.update({
-      where: { userId },
+    await prisma.user.update({
+      where: { id: userId },
       data: {
-        profileImageUrl: photoPath
+        avatarUrl: photoPath
       }
     });
 

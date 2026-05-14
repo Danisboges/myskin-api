@@ -67,64 +67,23 @@ const getSystemLogs = async (req, res) => {
   }
 };
 
-const getReportStatistics = async (startDate, endDate) => {
-  // Ubah string tanggal menjadi Date object
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  // Set waktu end ke akhir hari (23:59:59) agar data di hari terakhir ikut terhitung
-  end.setUTCHours(23, 59, 59, 999);
+const getReportStatistics = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
 
-  // 1. Hitung pasien baru yang terdaftar di rentang waktu tersebut
-  // Asumsi role pasien adalah 'PATIENT' sesuai schema kamu
-  const totalNewPatients = await prisma.user.count({
-    where: {
-      role: 'PATIENT',
-      createdAt: { gte: start, lte: end }
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        status: "error",
+        message: "startDate and endDate are required"
+      });
     }
-  });
 
-  // 2. Hitung total gambar yang dideteksi oleh AI
-  const totalScans = await prisma.detection.count({
-    where: { createdAt: { gte: start, lte: end } }
-  });
-
-  // 3. Hitung rata-rata persentase confidence dari AI (seberapa yakin AI-nya)
-  const avgConfidenceResult = await prisma.detection.aggregate({
-    _avg: { confidence: true },
-    where: { createdAt: { gte: start, lte: end } }
-  });
-  // Jika tidak ada data, jadikan 0. Asumsi confidence disimpan sebagai float (0.0 - 1.0 atau 0 - 100)
-  // Misal data kamu float 0.94, kita kalikan 100 jadi 94%. Jika di db sudah 94, hilangkan '* 100'.
-  const avgConfidence = avgConfidenceResult._avg.confidence 
-    ? (avgConfidenceResult._avg.confidence * 100).toFixed(2) 
-    : 0;
-
-  // 4. Hitung hasil yang berbahaya (Melanoma/Malignant)
-  // CATATAN: Ubah kata 'Melanoma' sesuai dengan output string dari model AI-mu yang disimpan ke DB
-  const highRiskCases = await prisma.detection.count({
-    where: {
-      result: { contains: 'Melanoma', mode: 'insensitive' }, 
-      createdAt: { gte: start, lte: end }
-    }
-  });
-
-  // 5. Konsultasi yang berhasil diselesaikan
-  const completedConsultations = await prisma.consultation.count({
-    where: {
-      status: 'COMPLETED',
-      updatedAt: { gte: start, lte: end }
-    }
-  });
-
-  return {
-    totalNewPatients,
-    totalScans,
-    highRiskCases,
-    lowRiskCases: totalScans - highRiskCases, // Hitung sisa scan sebagai jinak (low risk)
-    completedConsultations,
-    avgConfidence
-  };
+    const stats = await adminService.getReportStatistics(startDate, endDate);
+    res.status(200).json({ status: "success", data: stats });
+  } catch (err) {
+    console.error("Error getting report statistics:", err);
+    res.status(500).json({ status: "error", message: err.message });
+  }
 };
 
 const generateReport = async (req, res) => {

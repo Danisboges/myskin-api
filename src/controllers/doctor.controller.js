@@ -1,5 +1,19 @@
 const doctorService = require('../services/doctor.service');
 
+const parsePositiveInteger = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const normalizeOptionalString = (value) => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
 // ==================== DASHBOARD CONTROLLERS ====================
 
 /**
@@ -242,18 +256,35 @@ const rejectCase = async (req, res) => {
  */
 const getCaseHistory = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      console.warn('[doctor.caseHistory] Missing user id from token payload', {
+        user: req.user
+      });
+
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID tidak ditemukan pada token'
+      });
+    }
+
     const { search, diagnosis, status, startDate, endDate, page = 1, limit = 10 } = req.query;
 
     const filters = {
-      search,
-      diagnosis,
-      status,
-      startDate,
-      endDate,
-      page,
-      limit
+      search: normalizeOptionalString(search),
+      diagnosis: normalizeOptionalString(diagnosis),
+      status: normalizeOptionalString(status),
+      startDate: normalizeOptionalString(startDate),
+      endDate: normalizeOptionalString(endDate),
+      page: parsePositiveInteger(page, 1),
+      limit: Math.min(parsePositiveInteger(limit, 10), 100)
     };
+
+    console.info('[doctor.caseHistory] Request', {
+      userId,
+      role: req.user?.role,
+      filters
+    });
 
     const result = await doctorService.getCaseHistory(userId, filters);
 
@@ -262,7 +293,13 @@ const getCaseHistory = async (req, res) => {
       ...result
     });
   } catch (error) {
-    res.status(500).json({
+    console.error('[doctor.caseHistory] Failed', {
+      message: error.message,
+      stack: error.stack
+    });
+
+    const statusCode = Number.isInteger(error.status) ? error.status : 500;
+    res.status(statusCode).json({
       status: 'error',
       message: error.message
     });

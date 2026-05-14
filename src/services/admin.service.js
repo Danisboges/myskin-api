@@ -22,7 +22,7 @@ const getDashboardSummary = async () => {
       usersPrevMonth, 
       activeSessionsData, 
       accuracyData,
-      totalDetections
+      totalScans
     ] = await Promise.all([
       // 1. Total User & Growth Data
       prisma.user.count(),
@@ -35,13 +35,13 @@ const getDashboardSummary = async () => {
         distinct: ["patientId"],
       }),
 
-      // 3. Rata-rata Akurasi Deteksi
-      prisma.detection.aggregate({
-        _avg: { confidence: true },
+      // 3. Rata-rata Akurasi Deteksi (dari Scan, bukan Detection)
+      prisma.scan.aggregate({
+        _avg: { aiConfidence: true },
       }),
 
-      // 4. Hitung jumlah deteksi untuk estimasi storage lokal
-      prisma.detection.count()
+      // 4. Hitung jumlah scan untuk estimasi storage lokal
+      prisma.scan.count()
     ]);
 
     // LOGIKA PERHITUNGAN GROWTH
@@ -57,7 +57,7 @@ const getDashboardSummary = async () => {
      */
     
     // Estimasi Lokal (Dev Mode)
-    const estimatedMB = totalDetections * 0.5; // Asumsi 1 gambar = 500KB
+    const estimatedMB = totalScans * 0.5; // Asumsi 1 gambar = 500KB
     const limitMB = 5120; // Contoh limit 5GB
 
     const storageUsage = {
@@ -71,8 +71,8 @@ const getDashboardSummary = async () => {
       totalUsersGrowth: parseFloat(totalUsersGrowth.toFixed(1)),
       activeSessions: activeSessionsData.length,
       storageUsage, // <--- Siap diganti data asli setelah deploy
-      averageDetectionAccuracy: accuracyData._avg.confidence 
-        ? parseFloat((accuracyData._avg.confidence * 100).toFixed(1)) 
+      averageDetectionAccuracy: accuracyData._avg.aiConfidence 
+        ? parseFloat((accuracyData._avg.aiConfidence * 100).toFixed(1)) 
         : 96.4,
       accuracyGrowth: 0.2, 
     };
@@ -290,24 +290,25 @@ const getReportStatistics = async (startDate, endDate) => {
       where: { role: 'patient', ...dateFilter }
     }),
     
-    // B. Hitung Total Deteksi (Scans)
-    prisma.detection.count({
+    // B. Hitung Total Deteksi (Scans) - Gunakan Scan bukan Detection
+    prisma.scan.count({
       where: dateFilter
     }),
 
     // C. Hitung Kasus Risiko Tinggi (Sesuai komentar schema: result "Melanoma")
-    prisma.detection.count({
+    // Gunakan Scan dengan aiPrediction bukan Detection dengan result
+    prisma.scan.count({
       where: { 
-        // Ubah string ini jika AI kamu mengembalikan nilai yang berbeda (misal: "Malignant")
-        result: { contains: 'Melanoma', mode: 'insensitive' }, 
+        aiPrediction: { contains: 'Melanoma', mode: 'insensitive' }, 
         ...dateFilter 
       } 
     }),
 
     // D. Hitung Kasus Risiko Rendah (Sesuai komentar schema: result "Benign")
-    prisma.detection.count({
+    // Gunakan Scan dengan aiPrediction bukan Detection dengan result
+    prisma.scan.count({
       where: { 
-        result: { contains: 'Benign', mode: 'insensitive' }, 
+        aiPrediction: { contains: 'Benign', mode: 'insensitive' }, 
         ...dateFilter 
       }
     }),
@@ -317,9 +318,9 @@ const getReportStatistics = async (startDate, endDate) => {
       where: { status: 'CLOSED', ...dateFilter }
     }),
 
-    // F. Hitung Rata-rata Confidence (Akurasi AI)
-    prisma.detection.aggregate({
-      _avg: { confidence: true },
+    // F. Hitung Rata-rata Confidence (Akurasi AI) - Gunakan aiConfidence bukan confidence
+    prisma.scan.aggregate({
+      _avg: { aiConfidence: true },
       where: dateFilter
     })
   ]);
@@ -330,7 +331,7 @@ const getReportStatistics = async (startDate, endDate) => {
     highRiskCases,
     lowRiskCases,
     completedConsultations,
-    avgConfidence: confidenceAgg._avg.confidence ? Math.round(confidenceAgg._avg.confidence) : 0
+    avgConfidence: confidenceAgg._avg.aiConfidence ? Math.round(confidenceAgg._avg.aiConfidence * 100) : 0
   };
 };
 
