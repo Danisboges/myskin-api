@@ -115,11 +115,6 @@ const uploadScan = async (userId, fileData, complaint, bodySite) => {
     throw new Error('Patient profile not found');
   }
 
-<<<<<<< Updated upstream
-=======
-  console.log('DEBUG uploadScan - userId:', userId, 'patientId:', patient.id);
-
->>>>>>> Stashed changes
   // Simpan file
   const filename = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileData.originalname.split('.').pop()}`;
   const uploadDir = path.join(__dirname, '../../uploads');
@@ -134,11 +129,6 @@ const uploadScan = async (userId, fileData, complaint, bodySite) => {
   // Generate scanId
   const scanId = `SCN-${Date.now()}`;
 
-<<<<<<< Updated upstream
-=======
-  console.log('DEBUG uploadScan - Creating scan with scanId:', scanId, 'patientId:', patient.id);
-
->>>>>>> Stashed changes
   // Buat record scan di database
   const scan = await prisma.scan.create({
     data: {
@@ -154,11 +144,6 @@ const uploadScan = async (userId, fileData, complaint, bodySite) => {
     }
   });
 
-<<<<<<< Updated upstream
-=======
-  console.log('DEBUG uploadScan - Scan created successfully:', scan.scanId, 'with patientId:', scan.patientId);
-
->>>>>>> Stashed changes
   return {
     scanId: scan.scanId,
     id: scan.id,
@@ -205,25 +190,12 @@ const analyzeScan = async (userId, scanId) => {
 
   try {
     // 5. Siapkan file untuk dikirim ke AI
-<<<<<<< Updated upstream
     // Mengasumsikan struktur folder: melanoma-api/src/services/auth.service.js
     // dan folder uploads ada di root: melanoma-api/uploads
     const absolutePath = path.join(__dirname, '../../', scan.imageUrl);
 
     if (!fs.existsSync(absolutePath)) {
       throw new Error(`File image tidak ditemukan: ${absolutePath}`);
-=======
-    // imageUrl format: /uploads/scan_123456_abc.jpg
-    // Hapus leading slash dan join dengan project root
-    const relativePath = scan.imageUrl.startsWith('/') ? scan.imageUrl.slice(1) : scan.imageUrl;
-    const absolutePath = path.join(__dirname, '../../', relativePath);
-
-    console.log('DEBUG analyzeScan - absolutePath:', absolutePath);
-    console.log('DEBUG analyzeScan - file exists:', fs.existsSync(absolutePath));
-
-    if (!fs.existsSync(absolutePath)) {
-      throw new Error(`File image tidak ditemukan di: ${absolutePath}. ImageUrl dari DB: ${scan.imageUrl}`);
->>>>>>> Stashed changes
     }
 
     const form = new FormData();
@@ -438,11 +410,6 @@ const getScanDetail = async (userId, scanId, doctorUserId = null) => {
     throw new Error('Patient profile not found');
   }
 
-<<<<<<< Updated upstream
-=======
-  console.log('DEBUG getScanDetail - patient.id:', patient.id, 'scanId:', scanId);
-
->>>>>>> Stashed changes
   const scan = await prisma.scan.findUnique({
     where: { scanId },
     include: {
@@ -458,14 +425,7 @@ const getScanDetail = async (userId, scanId, doctorUserId = null) => {
     }
   });
 
-<<<<<<< Updated upstream
   if (!scan || scan.patientId !== patient.id) {
-=======
-  console.log('DEBUG getScanDetail - scan found:', !!scan, 'scan.patientId:', scan?.patientId);
-
-  if (!scan || scan.patientId !== patient.id) {
-    console.log('DEBUG getScanDetail - FAILED: scan exists:', !!scan, 'patientId match:', scan?.patientId === patient.id);
->>>>>>> Stashed changes
     throw new Error('Scan not found or unauthorized');
   }
 
@@ -548,16 +508,11 @@ const shareScanWithDoctor = async (userId, scanId, doctorUserId) => {
     });
 
     // Jika belum ada, buat CaseReview baru
-<<<<<<< Updated upstream
-=======
-    // CATATAN: doctorId akan diisi kemudian saat doctor mulai review, bukan saat share
->>>>>>> Stashed changes
     if (!caseReview) {
       caseReview = await prisma.caseReview.create({
         data: {
           caseId,
           scanId: scan.id,
-<<<<<<< Updated upstream
           doctorId: doctor.id, // <-- PERBAIKAN 1: Memasukkan ID Dokter ke sini
           reviewStatus: 'pending_review'
         }
@@ -568,11 +523,6 @@ const shareScanWithDoctor = async (userId, scanId, doctorUserId) => {
         where: { id: caseReview.id },
         data: { doctorId: doctor.id }
       });
-=======
-          reviewStatus: 'pending_review'
-        }
-      });
->>>>>>> Stashed changes
     }
 
     // Buat CaseAssignment untuk dokter ini
@@ -675,11 +625,7 @@ const getReportDetail = async (userId, reportId) => {
     }
   });
 
-<<<<<<< Updated upstream
   if (!report || report.patientId !== patient.userId) {
-=======
-  if (!report || report.patientId !== userId) {
->>>>>>> Stashed changes
     throw new Error('Report not found or unauthorized');
   }
 
@@ -699,11 +645,7 @@ const exportReportPDF = async (userId, reportId) => {
     where: { reportId }
   });
 
-<<<<<<< Updated upstream
   if (!report || report.patientId !== patient.userId) {
-=======
-  if (!report || report.patientId !== userId) {
->>>>>>> Stashed changes
     throw new Error('Report not found or unauthorized');
   }
 
@@ -1129,12 +1071,8 @@ const submitVerificationRequest = async (userId, message) => {
       patientId: patient.id,
       title: 'Verification Request Submitted',
       message: 'Your request for doctor verification has been submitted',
-<<<<<<< Updated upstream
       type: 'system_message',
       relatedVerificationId: verificationRequest.id
-=======
-      type: 'system_message'
->>>>>>> Stashed changes
     }
   });
 

@@ -19,10 +19,10 @@ router.get('/dashboard/summary', verifyToken, isDoctor, doctorController.getDash
 router.get('/cases/assigned', verifyToken, isDoctor, doctorController.getAssignedCases);
 
 /**
- * GET /api/v1/doctor/cases/:caseId
- * Get case details
+ * GET /api/v1/doctor/cases/history
+ * Get case history with filters
  */
-router.get('/cases/:caseId', verifyToken, isDoctor, doctorController.getCaseDetail);
+router.get('/cases/history', verifyToken, isDoctor, doctorController.getCaseHistory);
 
 /**
  * POST /api/v1/doctor/cases/:caseId/observation
@@ -45,10 +45,10 @@ router.patch('/cases/:caseId/reject', verifyToken, isDoctor, doctorController.re
 // ==================== CASE HISTORY ROUTES ====================
 
 /**
- * GET /api/v1/doctor/cases/history
- * Get case history with filters
+ * GET /api/v1/doctor/cases/:caseId
+ * Get case details
  */
-router.get('/cases/history', verifyToken, isDoctor, doctorController.getCaseHistory);
+router.get('/cases/:caseId', verifyToken, isDoctor, doctorController.getCaseDetail);
 
 /**
  * GET /api/v1/doctor/patients/:patientId/evolution

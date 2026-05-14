@@ -56,13 +56,6 @@ const isDoctor = (req, res, next) => {
   next();
 };
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-// Pastikan nama di sini sesuai dengan yang akan di-import di route
-module.exports = { verifyToken, isAdmin, isAdminOrDoctor, isDoctor };
-=======
-=======
->>>>>>> Stashed changes
 const isPatient = (req, res, next) => {
   if (!req.user || req.user.role !== "patient") {
     return res.status(403).json({
@@ -74,9 +67,4 @@ const isPatient = (req, res, next) => {
 };
 
 // Pastikan nama di sini sesuai dengan yang akan di-import di route
-<<<<<<< Updated upstream
 module.exports = { verifyToken, isAdmin, isAdminOrDoctor, isDoctor, isPatient };
->>>>>>> Stashed changes
-=======
-module.exports = { verifyToken, isAdmin, isAdminOrDoctor, isDoctor, isPatient };
->>>>>>> Stashed changes

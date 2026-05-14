@@ -4,17 +4,6 @@ const jwt = require('jsonwebtoken');
 
 const registerUser = async (userData) => {
   const { name, email, password, phone, role, gender, birthDate } = userData;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  return await prisma.user.create({
-    data: { name, email, password: hashedPassword, phone, role: role || 'user', gender, birthDate },
-    select: { id: true, name: true, email: true, role: true, phone: true, gender: true, birthDate: true, createdAt: true }
-  });
-=======
-=======
->>>>>>> Stashed changes
 
   // 1. Validasi input wajib
   if (!name || !email || !password || !gender) {
@@ -73,23 +62,33 @@ const registerUser = async (userData) => {
     console.error("DEBUG DB ERROR:", error);
     throw new Error(`Database menolak data: ${error.message}`);
   }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 };
 
 const loginUser = async (email, password) => {
-  // Log 1: Cek apakah email masuk
+  if (!email || !password) {
+    throw new Error("Email dan password harus disediakan");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() }
+  });
+
+  if (!user) {
+    throw new Error("Invalid email or password");
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error("Invalid email or password");
+  }
   
-  const user = await prisma.user.findUnique({ where: { email } });
-    const token = jwt.sign(
+  const token = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
   );
 
-  return { token, role: user.role };
+  return { token, id: user.id, name: user.name, email: user.email, role: user.role };
 };
 
 // Tambahkan fungsi lain agar konsisten dengan gaya yang Anda minta
