@@ -19,7 +19,11 @@ const login = async (req, res) => {
   } catch (err) {
     console.error("Gagal Login:", err.message);
     // Jika error "Invalid email or password", kirim status 401
-    res.status(401).json({ error: err.message });
+    res.status(401).json({
+      status: "error",
+      message: err.message,
+      error: err.message,
+    });
   }
 };
 
