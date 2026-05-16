@@ -153,6 +153,18 @@ const uploadScan = async (userId, fileData, complaint, bodySite) => {
   };
 };
 
+const findScanByIdentifier = async (scanIdentifier, include) => {
+  return prisma.scan.findFirst({
+    where: {
+      OR: [
+        { scanId: scanIdentifier },
+        { id: scanIdentifier }
+      ]
+    },
+    ...(include && { include })
+  });
+};
+
 const analyzeScan = async (userId, scanId) => {
   // 1. Ambil AI Base URL dari environment variable
   const AI_BASE_URL = process.env.AI_BASE_URL;
@@ -171,9 +183,7 @@ const analyzeScan = async (userId, scanId) => {
   }
 
   // 3. Cari Scan Record
-  const scan = await prisma.scan.findUnique({
-    where: { scanId }
-  });
+  const scan = await findScanByIdentifier(scanId);
 
   if (!scan) {
     throw new Error('Scan not found');
@@ -263,9 +273,7 @@ const getScanAnalysis = async (userId, scanId) => {
     throw new Error('Patient profile not found');
   }
 
-  const scan = await prisma.scan.findUnique({
-    where: { scanId }
-  });
+  const scan = await findScanByIdentifier(scanId);
 
   if (!scan || scan.patientId !== patient.id) {
     throw new Error('Scan not found or unauthorized');
@@ -410,9 +418,7 @@ const getScanDetail = async (userId, scanId, doctorUserId = null) => {
     throw new Error('Patient profile not found');
   }
 
-  const scan = await prisma.scan.findUnique({
-    where: { scanId },
-    include: {
+  const scan = await findScanByIdentifier(scanId, {
       reports: {
         select: {
           reportId: true,
@@ -422,7 +428,6 @@ const getScanDetail = async (userId, scanId, doctorUserId = null) => {
           createdAt: true
         }
       }
-    }
   });
 
   if (!scan || scan.patientId !== patient.id) {
@@ -454,9 +459,7 @@ const shareScanWithDoctor = async (userId, scanId, doctorUserId) => {
     throw new Error('Patient profile not found');
   }
 
-  const scan = await prisma.scan.findUnique({
-    where: { scanId }
-  });
+  const scan = await findScanByIdentifier(scanId);
 
   if (!scan || scan.patientId !== patient.id) {
     throw new Error('Scan not found or unauthorized');
