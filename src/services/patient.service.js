@@ -761,13 +761,15 @@ const updatePatientProfile = async (userId, updateData) => {
   }
 
   // Update user data
-  const { name, phone } = updateData;
-  if (name || phone) {
+  const { name, phone, gender, birthDate } = updateData;
+  if (name || phone || gender || birthDate) {
     await prisma.user.update({
       where: { id: userId },
       data: {
         ...(name && { name }),
-        ...(phone && { phone })
+        ...(phone && { phone }),
+        ...(gender && { gender }),
+        ...(birthDate && { birthDate })
       }
     });
   }
