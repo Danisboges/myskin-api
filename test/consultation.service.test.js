@@ -9,6 +9,7 @@ const {
   createPrescription,
   getAiAnalysis,
   getConsultationList,
+  initiateConsultation,
   markMessagesAsRead,
   sendMessage,
 } = require('../src/services/consultation.service');
@@ -161,6 +162,43 @@ test('doctor consultation list supports filters and unread counts', async () => 
   assert.equal(result.data[0].lastMessage.senderRole, 'patient');
   assert.equal(result.data[0].unreadCount, 1);
   assert.equal(result.pagination.lastPage, 1);
+});
+
+test('initiateConsultation accepts doctor User.id from available doctors response', async () => {
+  const patient = await createUser('patient', `Patient ${stamp()}`);
+  const doctor = await createUser('doctor', `Doctor ${stamp()}`);
+
+  const scan = await prisma.scan.create({
+    data: {
+      patientId: patient.patientProfile.id,
+      imageUrl: '/uploads/test-lesion-initiate.jpg',
+      complaint: 'New lesion consultation request',
+      bodySite: 'back',
+      isAnalyzed: true,
+      aiPrediction: 'Benign',
+      aiConfidence: 0.82,
+      aiDetails: 'No concerning pattern detected',
+      analyzeCompletedAt: new Date(),
+    },
+  });
+  created.scanIds.push(scan.id);
+
+  const result = await initiateConsultation(
+    patient.id,
+    doctor.id,
+    scan.scanId,
+    'Saya ingin konsultasi hasil scan ini.'
+  );
+  created.consultationIds.push(result.id);
+
+  assert.equal(result.doctor.id, doctor.id);
+  assert.equal(result.scan.scanId, scan.scanId);
+
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: result.id },
+  });
+
+  assert.equal(consultation.doctorId, doctor.id);
 });
 
 test('markMessagesAsRead creates read receipts for unread participant messages', async () => {

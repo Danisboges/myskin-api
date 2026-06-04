@@ -140,7 +140,7 @@ const buildDateRangeFilter = (startDate, endDate) => {
 /**
  * Inisial konsultasi baru antara patient dan doctor
  * @param {string} userId - Patient user ID
- * @param {string} doctorId - Doctor ID (dari doctor profile)
+ * @param {string} doctorId - Doctor ID dari payload. Bisa DoctorProfile.id atau User.id.
  * @param {string} scanId - Scan ID yang akan didiskusikan
  * @param {string} initialMessage - Pesan awal dari patient
  * @returns {object} Consultation object
@@ -173,9 +173,15 @@ const initiateConsultation = async (userId, doctorId, scanId, initialMessage) =>
       throw new Error('Unauthorized: Scan does not belong to this patient');
     }
 
-    // 3. Validasi bahwa doctor ada dan valid
-    const doctor = await prisma.doctorProfile.findUnique({
-      where: { id: doctorId },
+    // 3. Validasi bahwa doctor ada dan valid.
+    // Available doctors endpoint returns User.id, while older clients may send DoctorProfile.id.
+    const doctor = await prisma.doctorProfile.findFirst({
+      where: {
+        OR: [
+          { id: doctorId },
+          { userId: doctorId }
+        ]
+      },
       include: { user: true }
     });
 
