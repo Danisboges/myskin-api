@@ -871,15 +871,85 @@ const generateDoctorCaseReportPdf = async (userId, caseId) => {
     const { doctorProfile, caseReview } = await fetchDoctorCaseForReport(userId, caseId);
     const buffer = await createPdfBuffer((doc) => renderCaseReportPdf(doc, caseReview, doctorProfile));
 
+    // ===== SAVE PDF TO FILE SYSTEM =====
+    const reportsDir = path.join(__dirname, '../../uploads/reports');
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    const fileName = `MySkin_Doctor_Case_Report_${Date.now()}_${caseId}.pdf`;
+    const filePath = path.join(reportsDir, fileName);
+    fs.writeFileSync(filePath, buffer);
+
+    const pdfUrl = `/uploads/reports/${fileName}`;
+
+    // ===== SAVE TO DATABASE =====
+    let reportId = null;
+    let dbError = null;
+
+    try {
+      const patientUser = caseReview.scan?.patient?.user || {};
+      const scan = caseReview.scan || {};
+
+      console.log('[doctor.service.generateDoctorCaseReportPdf] DB Insert Info', {
+        scanId: caseReview.scanId,
+        patientId: scan.patientId,
+        doctorId: doctorProfile.id,
+        caseId
+      });
+
+      const report = await prisma.report.create({
+        data: {
+          scanId: caseReview.scanId,
+          patientId: scan.patientId,
+          title: `Doctor Case Report - ${caseId}`,
+          description: `Case report for patient ${patientUser.name || 'Unknown'}. Case ID: ${caseId}`,
+          diagnosis: caseReview.finalDiagnosis || 'Pending diagnosis',
+          recommendation: caseReview.physicianObservation || 'No recommendation recorded',
+          pdfUrl,
+          status: 'completed',
+          approvedByDoctorId: doctorProfile.id,
+          approvedAt: new Date()
+        }
+      });
+
+      reportId = report.reportId;
+      console.log('[doctor.service.generateDoctorCaseReportPdf] Report saved successfully', { reportId, pdfUrl });
+    } catch (dbErr) {
+      dbError = dbErr;
+      console.error('[doctor.service.generateDoctorCaseReportPdf] DB Error', {
+        message: dbErr.message,
+        code: dbErr.code,
+        stack: dbErr.stack
+      });
+    }
+
     return {
-      buffer,
-      fileName: `MySkin_Doctor_Case_Report_${caseId}.pdf`,
-      contentType: 'application/pdf'
+      success: true,
+      message: reportId 
+        ? 'Case report PDF generated and saved successfully' 
+        : 'Case report PDF generated (database save failed)',
+      reportId,
+      pdfUrl,
+      fileName,
+      caseId,
+      patientName: caseReview.scan?.patient?.user?.name || 'Unknown',
+      fileSize: buffer.length,
+      generatedAt: new Date().toISOString(),
+      dbError: dbError ? dbError.message : null
     };
   } catch (error) {
     if (error.status) {
       throw error;
     }
+
+    console.error('[doctor.service.generateDoctorCaseReportPdf] Outer Error', {
+      userId,
+      caseId,
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
 
     throw createHttpError(`Failed to generate case report PDF: ${error.message}`, 500);
   }

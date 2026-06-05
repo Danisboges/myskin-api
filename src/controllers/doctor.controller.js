@@ -382,10 +382,21 @@ const generateCaseReportPdf = async (req, res) => {
 
     const result = await doctorService.generateDoctorCaseReportPdf(userId, caseId);
 
-    res.setHeader('Content-Type', result.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
-    res.setHeader('Content-Length', result.buffer.length);
-    return res.status(200).send(result.buffer);
+    // Return JSON response with PDF URL and metadata
+    return res.status(200).json({
+      status: 'success',
+      message: result.message,
+      data: {
+        reportId: result.reportId,
+        pdfUrl: result.pdfUrl,
+        fileName: result.fileName,
+        caseId: result.caseId,
+        patientName: result.patientName,
+        fileSize: result.fileSize,
+        generatedAt: result.generatedAt
+      },
+      ...(result.dbError && { dbError: result.dbError })
+    });
   } catch (error) {
     const statusCode = Number.isInteger(error.status) ? error.status : 500;
     return res.status(statusCode).json({
