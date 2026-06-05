@@ -1738,23 +1738,6 @@ const getAdminProfile = async (adminId) => {
     throw error;
   }
 
-  let settings = await prisma.adminSettings.findUnique({
-    where: { adminId },
-  });
-
-  if (!settings) {
-    settings = await prisma.adminSettings.create({
-      data: {
-        adminId,
-        twoFactorEnabled: false,
-        emailNotifications: true,
-        verificationAlerts: false,
-        dataVisibility: "restricted_clinical_team_only",
-        language: "English (US)",
-      },
-    });
-  }
-
   return {
     adminId: admin.id,
     fullName: admin.name,
@@ -1766,17 +1749,6 @@ const getAdminProfile = async (adminId) => {
     joinedAt: formatDateTime(admin.createdAt),
     createdAt: formatDateTime(admin.createdAt),
     avatarUrl: admin.avatarUrl,
-    twoFactorEnabled: settings.twoFactorEnabled,
-    notifications: {
-      emailNotifications: settings.emailNotifications,
-      verificationAlerts: settings.verificationAlerts,
-    },
-    privacy: {
-      dataVisibility: settings.dataVisibility,
-    },
-    preferences: {
-      language: settings.language,
-    },
     administratorStatus: {
       status: "verified",
       label: "Verified Administrator",
