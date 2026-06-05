@@ -12,6 +12,7 @@ const {
   validateAndNormalizeEmail,
   ensureEmailAvailable,
 } = require('../utils/email.util');
+const { buildAiRequestHeaders, getAiModelConfig } = require('../utils/ai-model.util');
 const doctorNotificationService = require('./doctor-notification.service');
 
 // ==================== DASHBOARD ====================
@@ -171,12 +172,7 @@ const findScanByIdentifier = async (scanIdentifier, include) => {
 };
 
 const analyzeScan = async (userId, scanId) => {
-  // 1. Ambil AI Base URL dari environment variable
-  const AI_BASE_URL = process.env.AI_BASE_URL;
-
-  if (!AI_BASE_URL) {
-    throw new Error('AI_BASE_URL is not defined in environment variables');
-  }
+  const { predictUrl } = getAiModelConfig();
 
   // 2. Cari Patient Profile
   const patient = await prisma.patientProfile.findUnique({
@@ -216,11 +212,9 @@ const analyzeScan = async (userId, scanId) => {
     const form = new FormData();
     form.append('file', fs.createReadStream(absolutePath));
 
-    // 6. Request ke Model AI (FastAPI / Ngrok)
-    const aiResponse = await axios.post(`${AI_BASE_URL}/predict`, form, {
-      headers: {
-        ...form.getHeaders(),
-      },
+    // 6. Request ke Model AI
+    const aiResponse = await axios.post(predictUrl, form, {
+      headers: buildAiRequestHeaders(form.getHeaders()),
     });
 
     const aiResult = aiResponse.data;
@@ -900,7 +894,14 @@ const updateProfilePhoto = async (userId, fileData) => {
 
 const getPatientProfileOrThrow = async (userId) => {
   const patient = await prisma.patientProfile.findUnique({
-    where: { userId }
+    where: { userId },
+    include: {
+      user: {
+        select: {
+          email: true,
+        },
+      },
+    },
   });
 
   if (!patient) {
@@ -935,12 +936,25 @@ const getOrCreatePatientSettings = async (patientId) => {
 
 const getPatientSettings = async (userId) => {
   const patient = await getPatientProfileOrThrow(userId);
-  return getOrCreatePatientSettings(patient.id);
+  const settings = await getOrCreatePatientSettings(patient.id);
+
+  return {
+    account: {
+      email: patient.user.email,
+    },
+    notifications: {
+      emailNotifications: settings.emailNotifications,
+      scanNotifications: settings.scanNotifications,
+      reportNotifications: settings.reportNotifications,
+    },
+    preferences: {
+      language: settings.language,
+    },
+  };
 };
 
 const updateAccountSettings = async (userId, updateData) => {
   const patient = await getPatientProfileOrThrow(userId);
-  const settings = await getOrCreatePatientSettings(patient.id);
   let normalizedEmail;
 
   if (updateData.email !== undefined) {
@@ -948,26 +962,17 @@ const updateAccountSettings = async (userId, updateData) => {
     await ensureEmailAvailable(prisma, normalizedEmail, userId);
   }
 
-  const operations = [];
-
   if (normalizedEmail) {
-    operations.push(prisma.user.update({
+    await prisma.user.update({
       where: { id: userId },
       data: { email: normalizedEmail },
-    }));
+    });
   }
 
-  operations.push(
-    prisma.patientSettings.update({
-      where: { id: settings.id },
-      data: {
-        ...(updateData.twoFactorEnabled !== undefined && { twoFactorEnabled: updateData.twoFactorEnabled })
-      }
-    })
-  );
-
-  const results = await prisma.$transaction(operations);
-  return results[results.length - 1];
+  return {
+    success: true,
+    message: 'Account settings updated successfully',
+  };
 };
 
 const updateNotificationSettings = async (userId, updateData) => {
@@ -1007,8 +1012,7 @@ const updatePreferences = async (userId, updateData) => {
   const updatedSettings = await prisma.patientSettings.update({
     where: { id: settings.id },
     data: {
-      ...(updateData.language && { language: updateData.language }),
-      ...(updateData.theme && { theme: updateData.theme })
+      ...(updateData.language && { language: updateData.language })
     }
   });
 

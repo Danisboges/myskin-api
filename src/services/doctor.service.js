@@ -1204,15 +1204,11 @@ const getDoctorSettings = async (userId) => {
 
     return {
       account: {
-        email: user.email,
-        twoFactorEnabled: settings.twoFactorEnabled
+        email: user.email
       },
       notifications: {
         emailNotifications: settings.emailNotifications,
         verificationAlerts: settings.verificationAlerts
-      },
-      privacy: {
-        dataVisibility: settings.dataVisibility
       },
       preferences: {
         language: settings.language

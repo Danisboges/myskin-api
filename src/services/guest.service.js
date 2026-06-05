@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
+const { buildAiRequestHeaders, getAiModelConfig } = require('../utils/ai-model.util');
 
 // ==================== IN-MEMORY CACHE FOR GUEST SCAN RESULTS ====================
 /**
@@ -50,12 +51,7 @@ const analyzeGuestImage = async (fileData, complaint, bodySite) => {
   let tempFilePath = null;
   
   try {
-    // 1. Ambil AI Base URL dari environment variable
-    const AI_BASE_URL = process.env.AI_BASE_URL;
-
-    if (!AI_BASE_URL) {
-      throw new Error('AI_BASE_URL is not defined in environment variables');
-    }
+    const { predictUrl } = getAiModelConfig();
 
     // 2. Validasi file
     if (!fileData || !fileData.buffer) {
@@ -82,11 +78,9 @@ const analyzeGuestImage = async (fileData, complaint, bodySite) => {
     const form = new FormData();
     form.append('file', fs.createReadStream(tempFilePath));
 
-    // 6. Request ke Model AI (FastAPI / Ngrok)
-    const aiResponse = await axios.post(`${AI_BASE_URL}/predict`, form, {
-      headers: {
-        ...form.getHeaders(),
-      },
+    // 6. Request ke Model AI
+    const aiResponse = await axios.post(predictUrl, form, {
+      headers: buildAiRequestHeaders(form.getHeaders()),
       timeout: 30000 // 30 detik timeout
     });
 
@@ -250,9 +244,11 @@ const getGuestScanInfo = () => {
     feature: "Guest Melanoma Scan",
     description: "Free melanoma detection scan for guests without requiring login or registration",
     aiModel: {
-      enabled: !!process.env.AI_BASE_URL,
+      enabled: !!(process.env.AI_PREDICT_URL || process.env.AI_BASE_URL),
       baseUrl: process.env.AI_BASE_URL || 'Not configured',
-      status: process.env.AI_BASE_URL ? 'Active' : 'Not configured'
+      predictUrl: process.env.AI_PREDICT_URL || (process.env.AI_BASE_URL ? `${process.env.AI_BASE_URL.replace(/\/+$/, '')}/predict` : 'Not configured'),
+      gradcamUrl: process.env.AI_GRADCAM_URL || (process.env.AI_BASE_URL ? `${process.env.AI_BASE_URL.replace(/\/+$/, '')}/viz` : 'Not configured'),
+      status: (process.env.AI_PREDICT_URL || process.env.AI_BASE_URL) ? 'Active' : 'Not configured'
     },
     features: [
       "Quick AI analysis of skin lesion images using real ML model",

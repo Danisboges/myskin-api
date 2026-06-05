@@ -87,8 +87,8 @@ test('profile validators enforce payload rules', () => {
 
 test('settings and request validators reject invalid payloads', () => {
   assert.equal(runMiddleware(validateSettingsUpdate, {
-    body: { theme: 'blue' },
-  }).res.body.message, "theme must be either 'light' or 'dark'");
+    body: { language: 'French' },
+  }).res.body.message, 'language must be English (US) or Bahasa Indonesia');
 
   assert.equal(runMiddleware(validateVerificationRequest, {
     body: { message: 'too short' },

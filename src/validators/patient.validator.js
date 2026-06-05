@@ -153,16 +153,9 @@ const validateProfilePhotoUpdate = (req, res, next) => {
 // ==================== SETTINGS VALIDATORS ====================
 
 const validateSettingsUpdate = (req, res, next) => {
-  const { twoFactorEnabled, emailNotifications, scanNotifications, reportNotifications, language, theme } = req.body;
+  const { emailNotifications, scanNotifications, reportNotifications, language } = req.body;
 
   // Validasi boolean fields
-  if (twoFactorEnabled !== undefined && typeof twoFactorEnabled !== 'boolean') {
-    return res.status(400).json({
-      status: "error",
-      message: "twoFactorEnabled must be a boolean"
-    });
-  }
-
   if (emailNotifications !== undefined && typeof emailNotifications !== 'boolean') {
     return res.status(400).json({
       status: "error",
@@ -184,19 +177,10 @@ const validateSettingsUpdate = (req, res, next) => {
     });
   }
 
-  // Validasi language
-  if (language && typeof language !== 'string') {
+  if (language !== undefined && !["English (US)", "Bahasa Indonesia"].includes(language)) {
     return res.status(400).json({
       status: "error",
-      message: "language must be a string"
-    });
-  }
-
-  // Validasi theme
-  if (theme && !['light', 'dark'].includes(theme)) {
-    return res.status(400).json({
-      status: "error",
-      message: "theme must be either 'light' or 'dark'"
+      message: "language must be English (US) or Bahasa Indonesia"
     });
   }
 

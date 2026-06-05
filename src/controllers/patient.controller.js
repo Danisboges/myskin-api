@@ -419,6 +419,13 @@ const getSettings = async (req, res) => {
 
 const updateAccountSettings = async (req, res) => {
   try {
+    if (req.body.email === undefined) {
+      return res.status(400).json({
+        status: "error",
+        message: "email is required"
+      });
+    }
+
     const settings = await patientService.updateAccountSettings(req.user.id, req.body);
     
     res.status(200).json({
@@ -461,44 +468,38 @@ const updateNotificationSettings = async (req, res) => {
 };
 
 const updateTwoFactor = async (req, res) => {
-  try {
-    const { twoFactorEnabled } = req.body;
-    const settings = await patientService.updateAccountSettings(req.user.id, { twoFactorEnabled });
-    
-    res.status(200).json({
-      status: "success",
-      data: settings,
-      message: "Two-factor authentication settings updated successfully"
-    });
-  } catch (err) {
-    console.error("Error updateTwoFactor:", err.message);
-    res.status(500).json({
-      status: "error",
-      message: err.message
-    });
-  }
+  return res.status(410).json({
+    status: "error",
+    message: "Two-factor settings are no longer supported"
+  });
 };
 
 const updatePrivacySettings = async (req, res) => {
-  try {
-    const settings = await patientService.updatePrivacySettings(req.user.id, req.body);
-    
-    res.status(200).json({
-      status: "success",
-      data: settings,
-      message: "Privacy settings updated successfully"
-    });
-  } catch (err) {
-    console.error("Error updatePrivacySettings:", err.message);
-    res.status(500).json({
-      status: "error",
-      message: err.message
-    });
-  }
+  return res.status(410).json({
+    status: "error",
+    message: "Privacy settings are no longer supported"
+  });
 };
 
 const updatePreferences = async (req, res) => {
   try {
+    const { language } = req.body;
+
+    if (!language) {
+      return res.status(400).json({
+        status: "error",
+        message: "language is required"
+      });
+    }
+
+    const allowedLanguages = ["English (US)", "Bahasa Indonesia"];
+    if (!allowedLanguages.includes(language)) {
+      return res.status(400).json({
+        status: "error",
+        message: "language must be English (US) or Bahasa Indonesia"
+      });
+    }
+
     const settings = await patientService.updatePreferences(req.user.id, req.body);
     
     res.status(200).json({

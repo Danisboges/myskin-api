@@ -183,6 +183,23 @@ test("doctor account settings normalizes email and rejects duplicate", async () 
   );
 });
 
+test("doctor settings returns only useful settings groups", async () => {
+  const token = stamp();
+  const doctor = await createUser("doctor", `doctor.shape.${token}@example.com`);
+
+  const settings = await doctorService.getDoctorSettings(doctor.id);
+
+  assert.deepEqual(Object.keys(settings).sort(), ["account", "notifications", "preferences"]);
+  assert.deepEqual(settings.account, {
+    email: `doctor.shape.${token}@example.com`,
+  });
+  assert.equal(settings.account.twoFactorEnabled, undefined);
+  assert.equal(settings.privacy, undefined);
+  assert.equal(settings.notifications.emailNotifications, true);
+  assert.equal(settings.notifications.verificationAlerts, true);
+  assert.equal(settings.preferences.language, "English (US)");
+});
+
 test("patient account settings normalizes email and rejects duplicate", async () => {
   const token = stamp();
   const patient = await createUser("patient", `patient.email.${token}@example.com`);
@@ -208,4 +225,23 @@ test("patient account settings normalizes email and rejects duplicate", async ()
       return true;
     }
   );
+});
+
+test("patient settings returns only useful settings groups", async () => {
+  const token = stamp();
+  const patient = await createUser("patient", `patient.shape.${token}@example.com`);
+
+  const settings = await patientService.getPatientSettings(patient.id);
+
+  assert.deepEqual(Object.keys(settings).sort(), ["account", "notifications", "preferences"]);
+  assert.deepEqual(settings.account, {
+    email: `patient.shape.${token}@example.com`,
+  });
+  assert.equal(settings.account.twoFactorEnabled, undefined);
+  assert.equal(settings.privacy, undefined);
+  assert.equal(settings.preferences.theme, undefined);
+  assert.equal(settings.notifications.emailNotifications, true);
+  assert.equal(settings.notifications.scanNotifications, true);
+  assert.equal(settings.notifications.reportNotifications, true);
+  assert.equal(settings.preferences.language, "English (US)");
 });

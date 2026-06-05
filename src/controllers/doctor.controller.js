@@ -602,29 +602,10 @@ const updateAccountSettings = async (req, res) => {
  * PATCH /api/v1/doctor/settings/2fa
  */
 const update2FASettings = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { enabled } = req.body;
-
-    if (enabled === undefined || enabled === null) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'enabled field is required'
-      });
-    }
-
-    const result = await doctorService.update2FASettings(userId, enabled);
-
-    res.status(200).json({
-      status: 'success',
-      message: result.message
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
+  return res.status(410).json({
+    status: 'error',
+    message: 'Two-factor settings are no longer supported'
+  });
 };
 
 /**
@@ -664,37 +645,10 @@ const updateNotificationSettings = async (req, res) => {
  * PATCH /api/v1/doctor/settings/privacy
  */
 const updatePrivacySettings = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { dataVisibility } = req.body;
-
-    if (!dataVisibility) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'dataVisibility is required'
-      });
-    }
-
-    const validVisibilities = ['restricted_clinical_team_only', 'restricted_self_only', 'shared_with_clinic'];
-    if (!validVisibilities.includes(dataVisibility)) {
-      return res.status(400).json({
-        status: 'error',
-        message: `dataVisibility must be one of: ${validVisibilities.join(', ')}`
-      });
-    }
-
-    const result = await doctorService.updatePrivacySettings(userId, { dataVisibility });
-
-    res.status(200).json({
-      status: 'success',
-      message: result.message
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
+  return res.status(410).json({
+    status: 'error',
+    message: 'Privacy settings are no longer supported'
+  });
 };
 
 /**
@@ -709,6 +663,14 @@ const updatePreferences = async (req, res) => {
       return res.status(400).json({
         status: 'error',
         message: 'language is required'
+      });
+    }
+
+    const allowedLanguages = ['English (US)', 'Bahasa Indonesia'];
+    if (!allowedLanguages.includes(language)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'language must be English (US) or Bahasa Indonesia'
       });
     }
 
