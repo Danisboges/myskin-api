@@ -11,6 +11,7 @@ const doctorRoutes = require('./src/routes/doctor.route');
 const adminRoutes = require('./src/routes/admin.route');
 const patientRoutes = require('./src/routes/patient.route');
 const consultationRoutes = require('./src/routes/consultation.route');
+const aiConsultationRoutes = require('./src/routes/ai-consultation.route');
 const clinicRoutes = require('./src/routes/clinic.route');
 const clinicRequestRoutes = require('./src/routes/clinic-request.route');
 const { maintenanceModeMiddleware } = require('./src/middlewares/maintenance.middleware');
@@ -91,6 +92,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/patient', patientRoutes);
 app.use('/api/v1/clinics', clinicRoutes);
 app.use('/api/v1/clinic-requests', clinicRequestRoutes);
+app.use('/api/v1/patient/ai-consultations', aiConsultationRoutes);
 app.use('/api/v1/patient/consultations', consultationRoutes);
 app.use('/api/v1/doctor/consultations', consultationRoutes);
 
