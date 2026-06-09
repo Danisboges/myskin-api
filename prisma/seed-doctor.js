@@ -55,7 +55,7 @@ const patients = [
   {
     scanId: 'SCAN-SEED-001',
     caseId: 'SK-9921',
-    email: 'sarah.johnson@example.com',
+    email: 'shnarah.joson@example.com',
     name: 'Sarah Johnson',
     gender: 'female',
     birthDate: new Date('1984-02-11'),

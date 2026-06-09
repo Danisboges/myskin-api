@@ -61,7 +61,9 @@ const saveAnnotation = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: result.message,
-      data: result.data
+      data: {
+        annotatedImageUrl: result.annotatedImageUrl
+      }
     });
   } catch (err) {
     console.error("Error saveAnnotation:", err.message);
