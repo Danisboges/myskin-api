@@ -1,30 +1,26 @@
-# Base image containing the Ollama engine
-FROM ollama/ollama:latest
+# Gunakan base image resmi Node.js yang ringan (versi 20)
+FROM node:20-slim
 
-# Install Node.js 20 and npm packages needed for the Express app
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# Install OpenSSL dan dependensi dasar (sering kali dibutuhkan oleh Prisma Engine)
+RUN apt-get update -y && apt-get install -y openssl
 
-# Set the container workspace for your Node.js app
+# Set direktori kerja di dalam container
 WORKDIR /app
 
-# Install dependencies before copying the source code (improves build caching)
+# Copy file konfigurasi package npm
 COPY package*.json ./
+
+# Install dependensi Node.js
 RUN npm install
 
-# Copy all local project source files to the container workspace
+# Copy seluruh source code project ke dalam container
 COPY . .
 
-# Generate the Prisma client so it can access your Supabase database
+# Generate Prisma Client agar bisa mengakses database Supabase
 RUN npx prisma generate
 
-# Convert the entry point script to an executable
-RUN chmod +x /app/entrypoint.sh
-
-# Expose your application port (Railway sets this via the PORT variable automatically)
+# Ekspos port default (Railway akan otomatis me-routing variabel PORT)
 EXPOSE 3000
 
-# Fire up both systems using the entry point script
-CMD ["/app/entrypoint.sh"]
+# Jalankan server Express (sesuaikan "app.js" dengan nama file utama kamu, misal "server.js" atau "index.js")
+CMD ["node", "app.js"]

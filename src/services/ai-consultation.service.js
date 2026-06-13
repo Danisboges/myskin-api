@@ -2,19 +2,14 @@ const prisma = require('../config/prisma');
 const { publishConsultationEvent } = require('../services/consultation-events.service');
 
 const AI_BOT_NAME = 'Gemma AI';
-const AI_MODEL = 'gemma2';
+const AI_MODEL = 'medgemma:4b';
 
-const getOllamaClient = () => {
-  try {
-    const ollamaPackage = require('ollama');
-    return ollamaPackage.default || ollamaPackage;
-  } catch (error) {
-    if (error.code === 'MODULE_NOT_FOUND') {
-      throw new Error('AI chatbot service is unavailable: install the ollama npm package');
-    }
-
-    throw error;
+const getAiApiUrl = () => {
+  const url = process.env.GEMMA_API_URL;
+  if (!url) {
+    throw new Error('AI chatbot service is unavailable: GEMMA_API_URL is not defined in environment variables');
   }
+  return url;
 };
 
 const mapChatMessage = (chatMessage) => ({
@@ -111,6 +106,18 @@ const getAiChatHistory = async (userId, consultationId) => {
   return messages.map(mapChatMessage);
 };
 
+const buildConversationPrompt = (systemPrompt, chatHistory) => {
+  let prompt = `${systemPrompt}\n\nRiwayat Percakapan:\n`;
+  
+  chatHistory.forEach((msg) => {
+    const roleName = msg.role === 'assistant' ? AI_BOT_NAME : 'Pasien';
+    prompt += `${roleName}: ${msg.content}\n`;
+  });
+  
+  prompt += `${AI_BOT_NAME}:`; 
+  return prompt;
+};
+
 const sendAiMessage = async (userId, consultationId, messageContent) => {
   const message = (messageContent || '').trim();
 
@@ -169,15 +176,28 @@ const sendAiMessage = async (userId, consultationId, messageContent) => {
       content: chatMessage.message
     }));
 
-    const response = await getOllamaClient().chat({
-      model: AI_MODEL,
-      messages: [
-        { role: 'system', content: buildSystemPrompt(consultation.scan) },
-        ...chatHistory
-      ]
+    const systemPrompt = buildSystemPrompt(consultation.scan);
+    const finalPrompt = buildConversationPrompt(systemPrompt, chatHistory);
+    const apiUrl = getAiApiUrl();
+
+    const apiResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        prompt: finalPrompt,
+        stream: false
+      })
     });
 
-    const aiReplyContent = response?.message?.content?.trim();
+    if (!apiResponse.ok) {
+       throw new Error(`AI chatbot service is unavailable (Status: ${apiResponse.status})`);
+    }
+
+    const data = await apiResponse.json();
+    const aiReplyContent = data?.response?.trim();
 
     if (!aiReplyContent) {
       throw new Error('Gemma AI did not return a response');
@@ -206,6 +226,9 @@ const sendAiMessage = async (userId, consultationId, messageContent) => {
     publishConsultationEvent(consultationId, 'NEW_MESSAGE', mappedAiMessage);
 
     return mappedAiMessage;
+  } catch (error) {
+    console.error('Fetch AI Error:', error);
+    throw error;
   } finally {
     if (!typingStopped) {
       publishConsultationEvent(consultationId, 'TYPING', { isTyping: false, sender: AI_BOT_NAME });
