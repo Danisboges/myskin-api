@@ -1157,6 +1157,7 @@ const getAvailableDoctors = async () => {
       email: true,
       phone: true,
       avatarUrl: true,
+      status: true,
       doctorProfile: {
         select: {
           id: true,
@@ -1180,6 +1181,7 @@ const getAvailableDoctors = async () => {
     email: doctor.email,
     phone: doctor.phone,
     avatarUrl: doctor.avatarUrl,
+    status: doctor.status,
     doctorProfileId: doctor.doctorProfile?.id || null,
     verificationStatus: doctor.doctorProfile?.verificationStatus || null,
     specialization: doctor.doctorProfile?.specialization || null,
