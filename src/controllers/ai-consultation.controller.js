@@ -21,6 +21,10 @@ const getErrorStatusCode = (error) => {
     return 409;
   }
 
+  if (error.message.includes('AI chatbot service is unavailable')) {
+    return 503;
+  }
+
   return 500;
 };
 

@@ -1,10 +1,21 @@
-const ollamaPackage = require('ollama');
 const prisma = require('../config/prisma');
 const { publishConsultationEvent } = require('../services/consultation-events.service');
 
-const ollama = ollamaPackage.default || ollamaPackage;
 const AI_BOT_NAME = 'Gemma AI';
 const AI_MODEL = 'gemma2';
+
+const getOllamaClient = () => {
+  try {
+    const ollamaPackage = require('ollama');
+    return ollamaPackage.default || ollamaPackage;
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      throw new Error('AI chatbot service is unavailable: install the ollama npm package');
+    }
+
+    throw error;
+  }
+};
 
 const mapChatMessage = (chatMessage) => ({
   id: chatMessage.id,
@@ -158,7 +169,7 @@ const sendAiMessage = async (userId, consultationId, messageContent) => {
       content: chatMessage.message
     }));
 
-    const response = await ollama.chat({
+    const response = await getOllamaClient().chat({
       model: AI_MODEL,
       messages: [
         { role: 'system', content: buildSystemPrompt(consultation.scan) },
