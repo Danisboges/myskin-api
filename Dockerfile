@@ -23,4 +23,4 @@ RUN npx prisma generate
 EXPOSE 3000
 
 # Jalankan server Express (sesuaikan "app.js" dengan nama file utama kamu, misal "server.js" atau "index.js")
-CMD ["node", "start"]
+CMD ["npm", "start"]
